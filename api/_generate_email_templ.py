@@ -487,6 +487,18 @@ def main():
     if not os.path.isfile(CSV_PATH):
         raise FileNotFoundError(f"CSV not found: {CSV_PATH}")
 
+    # ── Debug: print raw CSV row for the highest studyid ─────────────────────
+    with open(CSV_PATH, newline="", encoding="utf-8-sig") as fh:
+        raw_rows = list(csv.DictReader(fh))
+    numeric_rows = [r for r in raw_rows if r.get("studyid", "").strip().isdigit()]
+    if numeric_rows:
+        raw_newest = max(numeric_rows, key=lambda r: int(r["studyid"].strip()))
+        print("DEBUG raw newest row:")
+        for k, v in raw_newest.items():
+            if v.strip():
+                print(f"  {k}: {v!r}")
+    # ─────────────────────────────────────────────────────────────────────────
+
     records = load_and_clean(CSV_PATH)
     gene_map = build_gene_submitter_map(records)
 
