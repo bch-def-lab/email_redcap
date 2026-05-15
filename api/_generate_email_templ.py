@@ -473,7 +473,7 @@ def push_emails_to_redcap(newest_studyid: str, emails: list[tuple[str, str, str,
             REDCAP_RECORD_ID_FIELD:    newest_studyid,
             "redcap_repeat_instrument": REDCAP_INSTRUMENT,
             "redcap_repeat_instance":   str(instance),
-            "address":            to_addr,
+            "recipient_email ":            to_addr,
             "subject":            subject,
             "content":              body,
             "email_complete":       "2",   # mark as complete
