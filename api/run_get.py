@@ -65,7 +65,7 @@ class handler(BaseHTTPRequestHandler):
 
         # Wait briefly so REDCap finishes writing auto-fields (e.g. timestamp)
         # before we fetch the report – the DET fires faster than REDCap commits.
-        time.sleep(5)
+        time.sleep(30)
 
         # ── Fetch REDCap report ───────────────────────────────────────────────
         payload = urlencode({
