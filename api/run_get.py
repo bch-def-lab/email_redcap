@@ -103,6 +103,7 @@ class handler(BaseHTTPRequestHandler):
         # ── Run email script in-process ───────────────────────────────────────
         script_output = ""
         script_error  = None
+        csv_rows = max(0, csv_content.count("\n") - 1)
         print(f"[run_get] csv_rows={csv_rows}, running generate_email_templ.main()")
         try:
             generate_email_templ.CSV_PATH = output_path
@@ -117,7 +118,6 @@ class handler(BaseHTTPRequestHandler):
 
         # ── Respond ───────────────────────────────────────────────────────────
         record = params.get("record", [None])[0]
-        csv_rows = max(0, csv_content.count("\n") - 1)  # subtract header row
         self._respond(200, {
             "status":        "ok",
             "updated":       datetime.datetime.utcnow().isoformat() + "Z",
