@@ -468,6 +468,7 @@ def push_emails_to_redcap(newest_studyid: str, emails: list[tuple[str, str, str,
     """
     records = []
     for to_addr, subject, body, instance in emails:
+        print(f"Preparing REDCap record for studyid={newest_studyid}, instance={instance}, to={to_addr}")
         records.append({
             REDCAP_RECORD_ID_FIELD:    newest_studyid,
             "redcap_repeat_instrument": REDCAP_INSTRUMENT,
