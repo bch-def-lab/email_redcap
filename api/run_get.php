@@ -12,7 +12,8 @@ $python_bin = getenv('PYTHON_BIN') ?: 'python3';
 $email_script = __DIR__ . '/generate_email_templ.py';
 
 // ── Handle Request ──────────────────────────────────────────────────────────
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+$method = $_SERVER['REQUEST_METHOD'];
+if ($method !== 'POST' && $method !== 'GET') {
     http_response_code(405);
     header('Content-Type: application/json');
     echo json_encode(['status' => 'error', 'message' => 'Method not allowed']);
@@ -20,7 +21,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 // Verify secret
-$provided_secret = $_POST['secret'] ?? '';
+$provided_secret = $_REQUEST['secret'] ?? '';
 if (!hash_equals($secret, $provided_secret)) {
     http_response_code(403);
     header('Content-Type: application/json');
@@ -102,7 +103,7 @@ echo json_encode([
     'status' => 'ok',
     'updated' => gmdate('c'),
     'file' => $output_path,
-    'triggered_by' => $_POST['record'] ?? 'manual',
+    'triggered_by' => $_REQUEST['record'] ?? 'manual',
     'preview' => substr($response, 0, 500),
     'email_script' => basename($email_script),
     'script_output' => $script_output,
