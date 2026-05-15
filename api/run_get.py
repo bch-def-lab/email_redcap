@@ -139,7 +139,8 @@ class handler(BaseHTTPRequestHandler):
             wp_req.add_header("User-Agent", "Mozilla/5.0 (compatible; REDCap-Sync/1.0)")
             with urllib.request.urlopen(wp_req, timeout=30) as wp_resp:
                 wp_status = wp_resp.status
-                print(f"[run_get] WP sync response: {wp_status}")
+                wp_body   = wp_resp.read().decode("utf-8", errors="replace")[:800]
+                print(f"[run_get] WP sync response: {wp_status} {wp_body}")
         except urllib.error.HTTPError as exc:
             body = exc.read().decode("utf-8", errors="replace")[:1000]
             wp_error = f"HTTP {exc.code} {exc.reason}: {body}"

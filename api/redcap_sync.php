@@ -139,7 +139,25 @@ function redcap_update(WP_REST_Request $request) {
         return new WP_REST_Response(['status' => 'error', 'message' => $response->get_error_message()], 502);
     }
 
-    $body = wp_remote_retrieve_body($response);
+    $http_code = wp_remote_retrieve_response_code($response);
+    $body      = wp_remote_retrieve_body($response);
+
+    if ($http_code !== 200) {
+        return new WP_REST_Response([
+            'status'    => 'error',
+            'message'   => "REDCap API returned HTTP $http_code",
+            'redcap_response' => substr($body, 0, 500),
+        ], 502);
+    }
+
+    // Sanity-check: REDCap errors come back as plain text starting with "ERROR:"
+    if (str_starts_with(ltrim($body), 'ERROR:')) {
+        return new WP_REST_Response([
+            'status'    => 'error',
+            'message'   => 'REDCap API returned an error',
+            'redcap_response' => substr($body, 0, 500),
+        ], 502);
+    }
 
     if (file_put_contents($output_path, $body) === false) {
         return new WP_REST_Response(['status' => 'error', 'message' => 'Could not write file.'], 500);
