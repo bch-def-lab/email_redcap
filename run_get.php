@@ -35,7 +35,7 @@ function redcap_sync_settings_page() {
                 <tr>
                     <th>REDCap API Token</th>
                     <td><input type="password" name="redcap_sync_token" class="regular-text"
-                        placeholder="YOUR_REDCAP_API_TOKEN"
+                        placeholder="E0CA32DDA744F69007F290643B9C0EAC"
                         value="<?php echo esc_attr(get_option('redcap_sync_token', '')); ?>" /></td>
                 </tr>
                 <tr>
@@ -128,12 +128,6 @@ function redcap_update(WP_REST_Request $request) {
         return new WP_REST_Response(['status' => 'error', 'message' => 'Plugin not configured.'], 500);
     }
 
-    // Purge WP Engine cache before pulling so stale data is cleared immediately
-    if ( function_exists( 'wpe_purge_varnish_cache' ) ) {
-        wpe_purge_varnish_cache();
-    } elseif ( class_exists( 'WpeCommon' ) ) {
-        WpeCommon::purge_varnish_cache();
-    }
 
     $response = wp_remote_post($api_url, array(
         'timeout' => 30,
@@ -160,13 +154,6 @@ function redcap_update(WP_REST_Request $request) {
 
     if (file_put_contents($output_path, $body) === false) {
         return new WP_REST_Response(['status' => 'error', 'message' => 'Could not write file.'], 500);
-    }
-
-    // Purge WP Engine page cache so /data serves fresh content immediately
-    if ( function_exists( 'wpe_purge_varnish_cache' ) ) {
-        wpe_purge_varnish_cache();
-    } elseif ( class_exists( 'WpeCommon' ) ) {
-        WpeCommon::purge_varnish_cache();
     }
 
     // ── Run email-template generation script ────────────────────────────────

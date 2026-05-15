@@ -18,7 +18,7 @@ from datetime import datetime, timedelta, timezone
 
 # ── Configuration ─────────────────────────────────────────────────────────────
 
-CSV_PATH = os.path.join(os.path.dirname(__file__), "DBSMatchMaker_DATA_2026-05-13_1110.csv")
+CSV_PATH = os.path.join(os.path.dirname(__file__), "redcap-data.csv")
 
 # How recent a submission must be (in minutes) to be treated as the "newest submitter"
 RECENCY_WINDOW_MINUTES = 5
@@ -26,7 +26,7 @@ RECENCY_WINDOW_MINUTES = 5
 # ── REDCap API ────────────────────────────────────────────────────────────────
 
 REDCAP_API_URL   = "https://redcap.tch.harvard.edu/redcap_edc/api/"
-REDCAP_API_TOKEN = "8DBE97BC87F90690ADE39919ED902379"       # replace with your project API token
+REDCAP_API_TOKEN = "CDDA604E9FD4A64F81892DA3F17D930C"       # replace with your project API token
 REDCAP_INSTRUMENT = "email"      # redcap_repeat_instrument value
 # The REDCap record-ID field name (first field in your project's data dictionary)
 REDCAP_RECORD_ID_FIELD = "studyid"
@@ -457,6 +457,7 @@ def push_emails_to_redcap(newest_studyid: str, emails: list[tuple[str, str, str,
             "address":            to_addr,
             "subject":            subject,
             "content":              body,
+            "email_complete":       "2",   # mark as complete
         })
 
     payload = {
