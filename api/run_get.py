@@ -19,9 +19,10 @@ import os
 import sys
 import urllib.request
 
-# ── Allow sibling imports (generate_email_templ lives in the same api/ dir) ──
+# ── Allow sibling imports (_generate_email_templ lives in the same api/ dir) ──
+# Underscore prefix tells Vercel NOT to deploy it as a standalone endpoint.
 sys.path.insert(0, os.path.dirname(__file__))
-import generate_email_templ  # noqa: E402
+import _generate_email_templ as generate_email_templ  # noqa: E402
 
 
 class handler(BaseHTTPRequestHandler):
@@ -97,14 +98,17 @@ class handler(BaseHTTPRequestHandler):
         # ── Run email script in-process ───────────────────────────────────────
         script_output = ""
         script_error  = None
+        print(f"[run_get] csv_rows={csv_rows}, running generate_email_templ.main()")
         try:
             generate_email_templ.CSV_PATH = output_path
             buf = io.StringIO()
             with contextlib.redirect_stdout(buf):
                 generate_email_templ.main()
             script_output = buf.getvalue()
+            print("[run_get] script_output:\n" + script_output)
         except Exception as exc:
             script_error = str(exc)
+            print(f"[run_get] script_error: {script_error}")
 
         # ── Respond ───────────────────────────────────────────────────────────
         record = params.get("record", [None])[0]
