@@ -20,8 +20,10 @@ from datetime import datetime, timedelta, timezone
 
 CSV_PATH = os.path.join(os.path.dirname(__file__), "redcap-data.csv")
 
-# How recent a submission must be (in minutes) to be treated as the "newest submitter"
-RECENCY_WINDOW_MINUTES = 5
+# How recent a submission must be (in minutes) to be treated as the "newest submitter".
+# Default is 1440 (24 h) because Vercel runs in UTC while REDCap timestamps are in the
+# project's local timezone – a small window would always reject valid submissions.
+RECENCY_WINDOW_MINUTES = int(os.environ.get("RECENCY_WINDOW_MINUTES", "1440"))
 
 # ── REDCap API ────────────────────────────────────────────────────────────────
 

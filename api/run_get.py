@@ -108,10 +108,12 @@ class handler(BaseHTTPRequestHandler):
 
         # ── Respond ───────────────────────────────────────────────────────────
         record = params.get("record", [None])[0]
+        csv_rows = max(0, csv_content.count("\n") - 1)  # subtract header row
         self._respond(200, {
             "status":        "ok",
             "updated":       datetime.datetime.utcnow().isoformat() + "Z",
             "file":          output_path,
+            "csv_rows":      csv_rows,
             "triggered_by":  record or "manual",
             "preview":       csv_content[:500],
             "email_script":  "generate_email_templ.py",
