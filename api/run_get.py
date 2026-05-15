@@ -17,6 +17,7 @@ import io
 import json
 import os
 import sys
+import time
 import urllib.request
 
 # ── Allow sibling imports (_generate_email_templ lives in the same api/ dir) ──
@@ -62,6 +63,10 @@ class handler(BaseHTTPRequestHandler):
             self._respond(500, {"status": "error", "message": "Configuration missing"})
             return
 
+        # Wait briefly so REDCap finishes writing auto-fields (e.g. timestamp)
+        # before we fetch the report – the DET fires faster than REDCap commits.
+        time.sleep(5)
+
         # ── Fetch REDCap report ───────────────────────────────────────────────
         payload = urlencode({
             "token":              token,
@@ -98,7 +103,6 @@ class handler(BaseHTTPRequestHandler):
         # ── Run email script in-process ───────────────────────────────────────
         script_output = ""
         script_error  = None
-        csv_rows = max(0, csv_content.count("\n") - 1)
         print(f"[run_get] csv_rows={csv_rows}, running generate_email_templ.main()")
         try:
             generate_email_templ.CSV_PATH = output_path
@@ -113,6 +117,7 @@ class handler(BaseHTTPRequestHandler):
 
         # ── Respond ───────────────────────────────────────────────────────────
         record = params.get("record", [None])[0]
+        csv_rows = max(0, csv_content.count("\n") - 1)  # subtract header row
         self._respond(200, {
             "status":        "ok",
             "updated":       datetime.datetime.utcnow().isoformat() + "Z",
