@@ -29,7 +29,7 @@ REDCAP_API_URL   = "https://redcap.tch.harvard.edu/redcap_edc/api/"
 REDCAP_API_TOKEN = "CDDA604E9FD4A64F81892DA3F17D930C"       # replace with your project API token
 REDCAP_INSTRUMENT = "email"      # redcap_repeat_instrument value
 # The REDCap record-ID field name (first field in your project's data dictionary)
-REDCAP_RECORD_ID_FIELD = "studyid"
+REDCAP_RECORD_ID_FIELD = "record_id"
 
 # Mirrors mapping_submitter_institution_v2 from DBSMM_Matcher.R
 INSTITUTION_MAP = {
