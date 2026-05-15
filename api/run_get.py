@@ -124,8 +124,8 @@ class handler(BaseHTTPRequestHandler):
         # browser-like User-Agent so WP Engine's WAF doesn't block the request.
         wp_url    = os.environ.get(
             "WP_SYNC_URL",
-            "https://dbsmatchmaker.com/wp-json/redcap/v1/update"
-            "?secret=ca8318716dbf7cdc4682a6afebc6404c",
+            "https://dbsmatchmaker.com/?rest_route=/redcap/v1/update"
+            "&secret=ca8318716dbf7cdc4682a6afebc6404c",
         )
         wp_status = None
         wp_error  = None
