@@ -119,9 +119,13 @@ class handler(BaseHTTPRequestHandler):
             print(f"[run_get] script_error: {script_error}")
 
         # ── Notify WordPress sync endpoint ──────────────────────────────────
-        wp_url    = os.environ.get("WP_SYNC_URL",
-                        "https://dbsmatchmaker.com/?rest_route=/redcap/v1/update"
-                        "&secret=ca8318716dbf7cdc4682a6afebc6404c")
+        # Use /wp-json/ path (avoids ?rest_route= redirect issues) and set a
+        # browser-like User-Agent so WP Engine's WAF doesn't block the request.
+        wp_url    = os.environ.get(
+            "WP_SYNC_URL",
+            "https://dbsmatchmaker.com/wp-json/redcap/v1/update"
+            "?secret=ca8318716dbf7cdc4682a6afebc6404c",
+        )
         wp_status = None
         wp_error  = None
         record_param = params.get("record", [None])[0]
@@ -130,6 +134,8 @@ class handler(BaseHTTPRequestHandler):
                 "record": record_param or "",
             }).encode()
             wp_req = urllib.request.Request(wp_url, data=wp_payload, method="POST")
+            wp_req.add_header("Content-Type", "application/x-www-form-urlencoded")
+            wp_req.add_header("User-Agent", "Mozilla/5.0 (compatible; REDCap-Sync/1.0)")
             with urllib.request.urlopen(wp_req, timeout=30) as wp_resp:
                 wp_status = wp_resp.status
                 print(f"[run_get] WP sync response: {wp_status}")
