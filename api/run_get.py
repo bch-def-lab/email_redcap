@@ -127,8 +127,7 @@ class handler(BaseHTTPRequestHandler):
         record_param = params.get("record", [None])[0]
         try:
             wp_payload = urlencode({
-                "record":   record_param or "",
-                "csv_data": csv_content,
+                "record": record_param or "",
             }).encode()
             wp_req = urllib.request.Request(wp_url, data=wp_payload, method="POST")
             with urllib.request.urlopen(wp_req, timeout=30) as wp_resp:

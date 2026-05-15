@@ -106,31 +106,6 @@ function redcap_update(WP_REST_Request $request) {
     $upload_dir  = wp_upload_dir();
     $output_path = trailingslashit($upload_dir['basedir']) . 'redcap-data.csv';
 
-    // If Vercel already fetched the CSV and forwarded it, use it directly.
-    // This avoids a redundant second REDCap API call from the WP side.
-    $forwarded_csv = $request->get_param('csv_data');
-    if (!empty($forwarded_csv)) {
-        if (file_put_contents($output_path, $forwarded_csv) === false) {
-            return new WP_REST_Response(['status' => 'error', 'message' => 'Could not write forwarded CSV.'], 500);
-        }
-
-        // Purge WP Engine page cache so /data serves fresh content immediately
-        if ( function_exists( 'wpe_purge_varnish_cache' ) ) {
-            wpe_purge_varnish_cache();
-        } elseif ( class_exists( 'WpeCommon' ) ) {
-            WpeCommon::purge_varnish_cache();
-        }
-
-        return new WP_REST_Response([
-            'status'       => 'ok',
-            'source'       => 'forwarded',
-            'updated'      => gmdate('c'),
-            'file'         => $output_path,
-            'triggered_by' => $request->get_param('record') ?? 'manual',
-        ], 200);
-    }
-
-    // No forwarded CSV – fall back to fetching directly from REDCap.
     $api_url = get_option('redcap_sync_api_url', '');
     $token   = get_option('redcap_sync_token', '');
 
@@ -179,7 +154,6 @@ function redcap_update(WP_REST_Request $request) {
 
     return new WP_REST_Response([
         'status'       => 'ok',
-        'source'       => 'self-fetched',
         'updated'      => gmdate('c'),
         'file'         => $output_path,
         'triggered_by' => $request->get_param('record') ?? 'manual',
