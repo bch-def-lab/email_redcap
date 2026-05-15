@@ -478,7 +478,9 @@ def push_emails_to_redcap(newest_studyid: str, emails: list[tuple[str, str, str,
             "content":              body,
             "email_complete":       "2",   # mark as complete
         })
-
+    print("The entire records being pushed to REDCap:")
+    for record in records:
+        print(record)
     payload = {
         "token":             REDCAP_API_TOKEN,
         "content":           "record",
