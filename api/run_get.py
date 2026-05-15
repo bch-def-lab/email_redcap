@@ -78,6 +78,7 @@ class handler(BaseHTTPRequestHandler):
             "rawOrLabelHeaders":  "raw",
             "exportCheckboxLabel": "false",
             "returnFormat":       "csv",
+            "exportSurveyFields":    "true",
         }).encode()
 
         try:
