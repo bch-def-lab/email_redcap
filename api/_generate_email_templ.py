@@ -254,16 +254,32 @@ def load_and_clean(csv_path: str) -> list[dict]:
     return cleaned
 
 
-def get_newest_submitter(records: list[dict]) -> dict | None:
+def get_newest_submitter(records: list[dict], det_record_id: str | None = None) -> dict | None:
     """
-    Return the record with the highest numeric studyid whose
-    matchmaker_submission_form_timestamp falls within the last
-    RECENCY_WINDOW_MINUTES minutes.  Returns None otherwise.
+    Return the record matching det_record_id (the REDCap DET 'record' param) when
+    provided, bypassing the timestamp check.  Falls back to the highest-studyid
+    record within the last RECENCY_WINDOW_MINUTES minutes when no id is given.
     """
-    # Find the record with the highest studyid (numeric sort)
     valid = [r for r in records if r["studyid"].isdigit()]
     if not valid:
         return None
+
+    if det_record_id is not None:
+        # DET told us exactly which record was just submitted – use it directly.
+        matched = [r for r in valid if r["studyid"] == str(det_record_id)]
+        if not matched:
+            print(f"  ⚠  DET record id {det_record_id!r} not found in CSV – falling back to newest.")
+        else:
+            newest = matched[0]
+            if newest["Email"] == "":
+                print(f"  ⚠  Record {det_record_id} has no email – skipping.")
+                return None
+            if newest["gene"] == "":
+                print(f"  ⚠  Record {det_record_id} has no gene – skipping.")
+                return None
+            return newest
+
+    # No DET id supplied (or not found): fall back to max studyid + recency window.
     newest = max(valid, key=lambda r: int(r["studyid"]))
     if newest["Email"] == "":
         print(f"  ⚠  Newest record (studyid={newest['studyid']}) has no email – skipping.")
@@ -483,7 +499,7 @@ def push_emails_to_redcap(newest_studyid: str, emails: list[tuple[str, str, str,
 
 # ── Main ───────────────────────────────────────────────────────────────────────
 
-def main():
+def main(det_record_id: str | None = None):
     if not os.path.isfile(CSV_PATH):
         raise FileNotFoundError(f"CSV not found: {CSV_PATH}")
 
@@ -502,7 +518,7 @@ def main():
     records = load_and_clean(CSV_PATH)
     gene_map = build_gene_submitter_map(records)
 
-    newest = get_newest_submitter(records)
+    newest = get_newest_submitter(records, det_record_id=det_record_id)
     if newest is None:
         print("No recent submission found. No emails generated.")
         return

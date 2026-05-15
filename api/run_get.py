@@ -65,7 +65,7 @@ class handler(BaseHTTPRequestHandler):
 
         # Wait briefly so REDCap finishes writing auto-fields (e.g. timestamp)
         # before we fetch the report – the DET fires faster than REDCap commits.
-        time.sleep(30)
+        time.sleep(5)
 
         # ── Fetch REDCap report ───────────────────────────────────────────────
         payload = urlencode({
@@ -108,14 +108,35 @@ class handler(BaseHTTPRequestHandler):
         print(f"[run_get] csv_rows={csv_rows}, running generate_email_templ.main()")
         try:
             generate_email_templ.CSV_PATH = output_path
+            det_record_id = params.get("record", [None])[0]
             buf = io.StringIO()
             with contextlib.redirect_stdout(buf):
-                generate_email_templ.main()
+                generate_email_templ.main(det_record_id=det_record_id)
             script_output = buf.getvalue()
             print("[run_get] script_output:\n" + script_output)
         except Exception as exc:
             script_error = str(exc)
             print(f"[run_get] script_error: {script_error}")
+
+        # ── Notify WordPress sync endpoint ──────────────────────────────────
+        wp_url    = os.environ.get("WP_SYNC_URL",
+                        "https://dbsmatchmaker.com/?rest_route=/redcap/v1/update"
+                        "&secret=ca8318716dbf7cdc4682a6afebc6404c")
+        wp_status = None
+        wp_error  = None
+        record_param = params.get("record", [None])[0]
+        try:
+            wp_payload = urlencode({
+                "record":   record_param or "",
+                "csv_data": csv_content,
+            }).encode()
+            wp_req = urllib.request.Request(wp_url, data=wp_payload, method="POST")
+            with urllib.request.urlopen(wp_req, timeout=30) as wp_resp:
+                wp_status = wp_resp.status
+                print(f"[run_get] WP sync response: {wp_status}")
+        except Exception as exc:
+            wp_error = str(exc)
+            print(f"[run_get] WP sync error: {wp_error}")
 
         # ── Respond ───────────────────────────────────────────────────────────
         record = params.get("record", [None])[0]
@@ -129,6 +150,8 @@ class handler(BaseHTTPRequestHandler):
             "email_script":  "generate_email_templ.py",
             "script_output": script_output,
             "script_error":  script_error,
+            "wp_sync_status": wp_status,
+            "wp_sync_error":  wp_error,
         })
 
     def _respond(self, code: int, body: dict):
