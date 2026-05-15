@@ -18,6 +18,7 @@ import json
 import os
 import sys
 import time
+import urllib.error
 import urllib.request
 
 # ── Allow sibling imports (_generate_email_templ lives in the same api/ dir) ──
@@ -139,6 +140,10 @@ class handler(BaseHTTPRequestHandler):
             with urllib.request.urlopen(wp_req, timeout=30) as wp_resp:
                 wp_status = wp_resp.status
                 print(f"[run_get] WP sync response: {wp_status}")
+        except urllib.error.HTTPError as exc:
+            body = exc.read().decode("utf-8", errors="replace")[:1000]
+            wp_error = f"HTTP {exc.code} {exc.reason}: {body}"
+            print(f"[run_get] WP sync error: {wp_error}")
         except Exception as exc:
             wp_error = str(exc)
             print(f"[run_get] WP sync error: {wp_error}")
