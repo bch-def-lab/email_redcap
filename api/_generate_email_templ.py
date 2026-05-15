@@ -311,22 +311,16 @@ def get_newest_submitter(records: list[dict], det_record_id: str | None = None) 
 def build_gene_submitter_map(records: list[dict]) -> dict[str, list[dict]]:
     """
     For each gene, collect the deduplicated list of submitters
-    (Name, Institution, Email, studyid), keyed by lower-cased email.
-    When the same email appears more than once (multiple submissions),
-    the highest studyid wins so we attach the email to the most recent record.
+    (Name, Institution, Email), keyed by lower-cased email.
     """
     gene_map: dict[str, dict] = defaultdict(dict)
     for r in records:
         key = r["Email"].lower()
-        existing = gene_map[r["gene"]].get(key)
-        if existing is None or (r["studyid"].isdigit() and
-                int(r["studyid"]) > int(existing["studyid"] or 0)):
-            gene_map[r["gene"]][key] = {
-                "studyid":     r["studyid"],
-                "Name":        r["Name"],
-                "Institution": r["Institution"],
-                "Email":       r["Email"],
-            }
+        gene_map[r["gene"]].setdefault(key, {
+            "Name":        r["Name"],
+            "Institution": r["Institution"],
+            "Email":       r["Email"],
+        })
     return {gene: list(submitters.values()) for gene, submitters in gene_map.items()}
 
 
@@ -425,11 +419,9 @@ def generate_emails_for_existing(
     gene_submitter_map: dict[str, list[dict]],
 ):
     """
-    Yield one (studyid, to_address, subject, body) per unique existing submitter
+    Yield one (to_address, subject, body) per unique existing submitter
     of the same gene, notifying them that a new case was submitted.
     The newest submitter is excluded as a recipient.
-    studyid is the recipient's own REDCap record id so the email is stored
-    under their record, not the newest submitter's.
     """
     gene = newest["gene"]
     submitters = gene_submitter_map.get(gene, [])
@@ -446,7 +438,7 @@ def generate_emails_for_existing(
             gene=gene,
             submitter_context=new_context,
         )
-        yield recipient["studyid"], recipient["Email"], subject, body
+        yield recipient["Email"], subject, body
 
 
 def generate_email_no_match(newest: dict):
@@ -551,7 +543,7 @@ def main(det_record_id: str | None = None):
         push_emails_to_redcap(newest["studyid"], redcap_records)
         return
 
-    all_emails = email_to_new + [(addr, subj, bod) for _, addr, subj, bod in emails_to_existing]
+    all_emails = email_to_new + emails_to_existing
 
     # ── Output 1: unique recipient email addresses ────────────────────────────
     unique_addresses = sorted({addr for addr, _, _ in all_emails})
@@ -578,7 +570,7 @@ def main(det_record_id: str | None = None):
 
     if emails_to_existing:
         print(f"\n── EMAIL 2: TO EXISTING SUBMITTERS ({len(emails_to_existing)}) ──")
-        for rec_studyid, to_addr, subject, body in emails_to_existing:
+        for to_addr, subject, body in emails_to_existing:
             print(f"\nTO:      {to_addr}")
             print(f"SUBJECT: {subject}")
             print("-" * 40)
@@ -588,16 +580,15 @@ def main(det_record_id: str | None = None):
     print(f"\nDone: {len(all_emails)} email(s) across {len(unique_addresses)} recipient(s).")
 
     # ── Push to REDCap ────────────────────────────────────────────────────────
-    # Email to newest → stored under newest's own record (instance 1)
-    redcap_records_new: list[tuple[str, str, str, int]] = []
+    # Instance 1 = email to newest submitter (match to latest submitter)
+    # Instance 2+ = emails to existing/previous submitters
+    redcap_records: list[tuple[str, str, str, int]] = []
     for i, (to_addr, subject, body) in enumerate(email_to_new, start=1):
-        redcap_records_new.append((to_addr, subject, body, i))
-    if redcap_records_new:
-        push_emails_to_redcap(newest["studyid"], redcap_records_new)
-
-    # Emails to existing submitters → each stored under their own record (instance 1)
-    for rec_studyid, to_addr, subject, body in emails_to_existing:
-        push_emails_to_redcap(rec_studyid, [(to_addr, subject, body, 1)])
+        redcap_records.append((to_addr, subject, body, i))
+    offset = len(email_to_new) + 1
+    for i, (to_addr, subject, body) in enumerate(emails_to_existing, start=offset):
+        redcap_records.append((to_addr, subject, body, i))
+    push_emails_to_redcap(newest["studyid"], redcap_records)
 
 
 if __name__ == "__main__":
